@@ -7,8 +7,6 @@ from langchain_core.output_parsers import StrOutputParser
 
 def brazil_map(data):
     
-    #brazil_geojson = json.load("C:/Users/Usuario/Desktop/GitHub/LWB_article/LBW_article/bases/brazil_geo.json")
-
     url = "https://raw.githubusercontent.com/codeforamerica/click_that_hood/master/public/data/brazil-states.geojson"
     response = requests.get(url)
     brazil_geojson = response.json()
