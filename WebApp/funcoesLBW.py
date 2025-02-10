@@ -2,7 +2,7 @@ import folium
 import plotly.express as px
 import requests
 
-from langchain_core.prompts import PromptTemplate
+from langchain_core.prompts import PromptTemplate, ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.output_parsers import StrOutputParser
 
 def brazil_map(data):
@@ -135,18 +135,30 @@ def evol_lbw(data):
     return fig
 
 
-def promptTemp(llm, question: str) -> str:
+def promptTemp(llm, user_query, chat_history):
   
-  template = PromptTemplate.from_template("""
-  Você é um especialista em Baixo Peso ao Nascer. Responda a seguinte pergunta somente se ela for sobre Baixo Peso ao Nascer:
-  Se a pergunta não for sobre Baixo Peso ao Nascer responda: "Eu só respondo perguntas sobre Baixo Peso ao Nascer".
-                                          
-  Pergunta: {question}
-  Resposta:                                     
-  """)
 
-  chain = (template |
-           llm |
-          StrOutputParser())
+  #Você é um especialista em Baixo Peso ao Nascer. Responda a seguinte pergunta somente se ela for sobre Baixo Peso ao Nascer:
+  #Se a pergunta não for sobre Baixo Peso ao Nascer responda: "Eu só respondo perguntas sobre Baixo Peso ao Nascer".
+  
+  system_prompt = """
+  You are a Low Birth Weight specialist. Answer the following question only if it is about Low Birth Weight. 
+  Always answer in Brazilian Portuguese.
+  If the question is not about Low Birth Weight answer: "Eu só respondo perguntas sobre Baixo Peso ao Nascer.".
+                                                                      
+  """
 
-  return chain.invoke({"question": question})
+  user_prompt = "{input}"
+
+  prompt_template = ChatPromptTemplate.from_messages([
+        ("system", system_prompt),
+        MessagesPlaceholder(variable_name="chat_history"),
+        ("user", user_prompt)
+    ])
+
+  chain = prompt_template | llm | StrOutputParser()
+
+  return chain.stream({
+        "chat_history": chat_history,
+        "input": user_query,
+    })
