@@ -27,16 +27,16 @@ for message in st.session_state.chat_history:
         with st.chat_message("Human"): ### Configura o avatar de IA que aparece no chat
             st.write(message.content)  ### Retorna em tela a mensagem do "Humano"
 
-user_query = st.chat_input("Digite sua mensagem aqui...")
-if user_query is not None and user_query != "":  ### Verifica se o "Humano" passou alguma mensagem
+user_query = st.chat_input("Digite sua mensagem aqui...") ### Recebe a mensagem do "Humano"
+if user_query is not None and user_query != "":  ### Verifica se o "Humano" passou alguma mensagem (não passa vazio para o llm)
     st.session_state.chat_history.append(HumanMessage(content=user_query)) ### Adiciona a mensagem passada pelo "Humano" no historico do chat
 
     with st.chat_message("Human"):
-        st.markdown(user_query)
+        st.markdown(user_query) ### Registra a mensagem do "Humano" em tela
 
     with st.chat_message("AI"):
-        resp = st.write_stream(fl.promptTemp(llm=llm, user_query=user_query, chat_history=st.session_state.chat_history))
-        print(st.session_state.chat_history)
+        resp = st.write_stream(fl.promptTemp(llm=llm, user_query=user_query, chat_history=st.session_state.chat_history)) ### Retorna a mensagem da "IA"
+        print(st.session_state.chat_history) ### 
 
     st.session_state.chat_history.append(AIMessage(content=resp))
 
