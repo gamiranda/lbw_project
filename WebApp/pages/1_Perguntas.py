@@ -1,10 +1,13 @@
-from langchain_community.llms import Ollama
 from langchain_ollama import ChatOllama
+from langchain.cache import InMemoryCache
+from langchain_core.globals import set_llm_cache
 from langchain_core.messages import AIMessage, HumanMessage
 import streamlit as st
 import funcoesLBW as fl
 
 st.title("Faça perguntas")
+
+set_llm_cache(InMemoryCache())
 
 ### Carregando o LLM llama3 no modo Chat.
 llm = ChatOllama(
