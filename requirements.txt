@@ -19,3 +19,4 @@ lightgbm
 imblearn
 venn_abers
 regex
+pypdf
