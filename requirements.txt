@@ -20,3 +20,4 @@ imblearn
 venn_abers
 regex
 pypdf
+chromadb

@@ -4,6 +4,12 @@ import requests
 
 from langchain_core.prompts import PromptTemplate, ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.output_parsers import StrOutputParser
+from langchain_core.runnables import RunnablePassthrough
+
+from langchain_community.vectorstores.chroma import Chroma
+from langchain_community.embeddings import OllamaEmbeddings
+
+from langchain_community.llms import Ollama 
 
 def brazil_map(data):
     
@@ -132,31 +138,74 @@ def evol_lbw(data):
 
     return fig
 
+def format_docs(docs):
+    return "\n\n".join(doc.page_content for doc in docs)
+
+def contextualized_question(input: dict):
+
+    llm = Ollama(model="llama3")
+
+    contextualize_q_system_prompt = """Given a chat history and the latest user question \
+    which might reference context in the chat history, formulate a standalone question \
+    which can be understood without the chat history. Do NOT answer the question, \
+    just reformulate it if needed and otherwise return it as is."""
+
+    contextualize_q_prompt= ChatPromptTemplate.from_messages(
+        [
+            ("system", contextualize_q_system_prompt),
+            MessagesPlaceholder(variable_name="chat_history"),
+            ("human", "{question}"),
+        ]
+    )
+
+    contextualize_q_chain = contextualize_q_prompt | llm | StrOutputParser()
+
+    if input.get("chat_history"):
+        return contextualize_q_chain
+    else:
+        return input["question"]
 
 def promptTemp(llm, user_query, chat_history):
+    
+    embedding = OllamaEmbeddings(
+    model="nomic-embed-text",
+    )
   
+    db = Chroma(persist_directory="db", embedding_function=embedding)
 
-  #Você é um especialista em Baixo Peso ao Nascer. Responda a seguinte pergunta somente se ela for sobre Baixo Peso ao Nascer:
-  #Se a pergunta não for sobre Baixo Peso ao Nascer responda: "Eu só respondo perguntas sobre Baixo Peso ao Nascer".
-  
-  system_prompt = """
-  You are a Low Birth Weight specialist. Answer the following question only if it is about Low Birth Weight. 
-  Always answer in Brazilian Portuguese.
-  If the question is not about Low Birth Weight answer: "Eu só respondo perguntas sobre Baixo Peso ao Nascer.".
-                                                                      
-  """
+    retriever = db.as_retriever(
+    search_type = "similarity",
+    search_kwargs = {"k": 3}
+    )
 
-  user_prompt = "{input}"
+    template = """       
+    You are a Low Birth Weight specialist. Always answer in portuguese.
+    You can only answer question related to Low Birth Weight. Answer the question based only on the following context:
 
-  prompt_template = ChatPromptTemplate.from_messages([
-        ("system", system_prompt),
-        MessagesPlaceholder(variable_name="chat_history"),
-        ("user", user_prompt)
-    ])
+    {context}
+    """
 
-  chain = prompt_template | llm | StrOutputParser()
+    prompt_template = ChatPromptTemplate.from_messages(
+        [
+            ("system", template),
+            MessagesPlaceholder(variable_name="chat_history"),
+            ("human", "{question}"),
+        ]
+    )
 
-  return chain.stream({
-        "chat_history": chat_history,
-        "input": user_query,
-    })
+    rag_chain = (
+        RunnablePassthrough.assign(
+            context = contextualized_question | retriever | format_docs
+        )
+        | prompt_template 
+        | llm
+    )
+
+    return rag_chain.stream(
+        {
+            "question": user_query,
+            "chat_history": chat_history
+        }
+    )
+
+
