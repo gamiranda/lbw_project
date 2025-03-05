@@ -38,7 +38,7 @@ if user_query is not None and user_query != "":  ### Verifica se o "Humano" pass
         st.markdown(user_query) ### Registra a mensagem do "Humano" em tela
 
     with st.chat_message("AI"):
-        resp = st.write_stream(fl.promptTemp(llm=llm, user_query=user_query, chat_history=st.session_state.chat_history)) ### Retorna a mensagem da "IA"
+        resp = st.write_stream(fl.rag_chat(llm=llm, user_query=user_query, chat_history=st.session_state.chat_history)) ### Retorna a mensagem da "IA"
         print(st.session_state.chat_history) ### 
 
     st.session_state.chat_history.append(AIMessage(content=resp))

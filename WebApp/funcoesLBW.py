@@ -165,7 +165,7 @@ def contextualized_question(input: dict):
     else:
         return input["question"]
 
-def promptTemp(llm, user_query, chat_history):
+def rag_chat(llm, user_query, chat_history):
     
     embedding = OllamaEmbeddings(
     model="nomic-embed-text",
@@ -209,3 +209,35 @@ def promptTemp(llm, user_query, chat_history):
     )
 
 
+def rag_questions(llm, question: str) -> str:
+  
+    embedding = OllamaEmbeddings(
+        model="nomic-embed-text",
+    )
+
+    db = Chroma(persist_directory="db", embedding_function=embedding)
+
+    retriever = db.as_retriever(
+    search_type = "similarity",
+    search_kwargs = {"k": 3}
+    )
+  
+    template = PromptTemplate.from_template("""       
+    You are a Low Birth Weight specialist. Always answer in portuguese. Don't show up your thinking.
+    You can only answer question related to Low Birth Weight. Answer the question based only on the following context:
+
+    {context}
+
+    ---
+
+    {question}
+    """)
+
+    chain = (
+        {"context": retriever | format_docs, "question": RunnablePassthrough()}
+        | template 
+        | llm 
+        | StrOutputParser()
+    )
+
+    return chain.stream({"question": question})
