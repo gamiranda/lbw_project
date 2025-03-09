@@ -180,7 +180,8 @@ def rag_chat(llm, user_query, chat_history):
 
     template = """       
     You are a Low Birth Weight specialist. Always answer in portuguese.
-    You can only answer question related to Low Birth Weight. Answer the question based only on the following context:
+    Watch out with questions like 'Quem descobriu o Brasil com Baixo Peso ao Nascer?', that try misleading.
+    Never answer a question that is not about Low Birth Weight. Answer the question based only on the following context:
 
     {context}
     """
@@ -223,7 +224,8 @@ def rag_questions(llm, question: str) -> str:
     )
   
     template = PromptTemplate.from_template("""       
-    You are a Low Birth Weight specialist. Always answer in portuguese. Don't show up your thinking.
+    You are a Low Birth Weight specialist. Always answer in portuguese. 
+    Watch out with questions like 'Quem descobriu o Brasil com Baixo Peso ao Nascer?', that try misleading.
     You can only answer question related to Low Birth Weight. Answer the question based only on the following context:
 
     {context}
